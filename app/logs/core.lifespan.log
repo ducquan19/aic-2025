@@ -1,0 +1,8 @@
+2025-08-19 13:41:09,729 | INFO     | core.lifespan | info:44 | Starting up application...
+2025-08-19 13:41:10,325 | INFO     | core.lifespan | info:44 | Successfully connected to MongoDB
+2025-08-19 13:41:10,341 | INFO     | core.lifespan | info:44 | Beanie initialized successfully
+2025-08-19 14:05:49,817 | INFO     | core.lifespan | info:44 | Service factory initialized successfully
+2025-08-19 14:05:49,844 | INFO     | core.lifespan | info:44 | Application startup completed successfully
+2025-08-19 14:07:56,052 | INFO     | core.lifespan | info:44 | Shutting down application...
+2025-08-19 14:07:56,108 | INFO     | core.lifespan | info:44 | MongoDB connection closed
+2025-08-19 14:07:56,111 | INFO     | core.lifespan | info:44 | Application shutdown completed successfully

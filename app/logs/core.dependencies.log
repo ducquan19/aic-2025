@@ -1,0 +1,6 @@
+2025-08-19 14:07:19,938 | INFO     | core.dependencies | info:44 | Creating query controller...
+2025-08-19 14:07:19,951 | WARNING  | core.dependencies | warning:47 | Data folder does not exist: /media/tinhanhnguyen/Data3/Projects/HCMAI2025_Baseline/data/keyframe
+2025-08-19 14:07:19,953 | ERROR    | core.dependencies | error:50 | Failed to create query controller: [Errno 13] Permission denied: '/media/tinhanhnguyen'
+2025-08-19 14:07:25,299 | INFO     | core.dependencies | info:44 | Creating query controller...
+2025-08-19 14:07:25,301 | WARNING  | core.dependencies | warning:47 | Data folder does not exist: /media/tinhanhnguyen/Data3/Projects/HCMAI2025_Baseline/data/keyframe
+2025-08-19 14:07:25,305 | ERROR    | core.dependencies | error:50 | Failed to create query controller: [Errno 13] Permission denied: '/media/tinhanhnguyen'
