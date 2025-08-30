@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import requests
 import json
@@ -286,7 +287,8 @@ if st.session_state.search_results:
             with col_img:
                 # Try to display image if path is accessible
                 try:
-                    st.image(result["path"], width=200, caption=f"Keyframe {i+1}")
+                    # st.image(result["path"], width=200, caption=f"Keyframe {i+1}")
+                    st.image(os.path.join("data/keyframes", result["path"]), width=200, caption=f"Keyframe {i+1}")
                 except:
                     st.markdown(
                         f"""

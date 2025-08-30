@@ -102,6 +102,11 @@ class MilvusEmbeddingInjector:
         if embeddings.ndim == 1:
             embeddings = embeddings.reshape(1, -1)
 
+        embeddings = embeddings.astype(np.float32)
+        # L2 normalize theo hàng
+        norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+        embeddings = embeddings / np.clip(norms, 1e-12, None)
+
         num_vectors, embedding_dim = embeddings.shape
         print(f"Loaded {num_vectors} embeddings with dimension {embedding_dim}")
 
