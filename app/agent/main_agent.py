@@ -27,7 +27,7 @@ def apply_object_filter(
     filtered_keyframes = []
 
     for kf in keyframes:
-        keyy = f"L{kf.group_num:02d}/V{kf.video_num:03d}/{kf.keyframe_num:08d}.webp"
+        keyy = f"L{kf.group_num:02d}/L{kf.group_num:02d}_V{kf.video_num:03d}/{kf.keyframe_num:03d}.jpg"
         keyframe_objects = objects_data.get(keyy, [])
         print(f"{keyy=}")
         print(f"{keyframe_objects=}")
@@ -112,21 +112,6 @@ class KeyframeSearchAgent:
         print(f"{group_num}")
         print(f"{video_num}")
         print(f"L{group_num:02d}/V{video_num:03d}")
-        # matching_asr = next(
-        #     (entry for entry in self.asr_data if entry["file_path"] == f"L{group_num:02d}/V{video_num:03d}"),
-        #     None
-        # )
-        # print(f"{matching_asr=}")
-
-        # asr_entries = matching_asr["result"]
-        # asr_text_segments = [
-        #     seg["text"]
-        #     for seg in asr_entries
-        #     if int(smallest_kf.keyframe_num) <= int(seg["start_frame"]) <= int(max_kf.keyframe_num)
-        #     or int(smallest_kf.keyframe_num) <= int(seg["end_frame"]) <= int(max_kf.keyframe_num)
-        # ]
-        # asr_text = " ".join(asr_text_segments)
-        # print(f"{asr_text=}")
 
         answer = await self.answer_generator.generate_answer(
             original_query=user_query,

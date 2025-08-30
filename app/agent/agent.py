@@ -182,12 +182,12 @@ class AnswerGenerator:
     ):
         chat_messages = []
         for kf in final_keyframes:
-            keyy = f"L{kf.group_num:02d}/V{kf.video_num:03d}/{kf.keyframe_num:08d}.webb"
+            keyy = f"L{kf.group_num:02d}/L{kf.group_num:02d}_V{kf.video_num:03d}/{kf.keyframe_num:03d}.jpg"
             objects = objects_data.get(keyy, [])
 
             image_path = os.path.join(
                 self.data_folder,
-                f"L{kf.group_num:02d}/V{kf.video_num:03d}/{kf.keyframe_num:08d}.webp",
+                f"L{kf.group_num:02d}/L{kf.group_num:02d}_V{kf.video_num:03d}/{kf.keyframe_num:03d}.jpg",
             )
 
             context_text = f"""

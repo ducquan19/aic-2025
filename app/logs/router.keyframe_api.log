@@ -1,0 +1,62 @@
+2025-08-25 14:17:24,423 | INFO     | router.keyframe_api | info:44 | Text search request: query='red car', top_k=10, threshold=0.2
+2025-08-25 14:17:40,837 | INFO     | router.keyframe_api | info:44 | Text search request: query='red car', top_k=10, threshold=0.1
+2025-08-25 14:19:12,848 | INFO     | router.keyframe_api | info:44 | Text search request: query='red car', top_k=10, threshold=0.2
+2025-08-25 14:19:15,971 | INFO     | router.keyframe_api | info:44 | Text search request: query='red car', top_k=10, threshold=0.1
+2025-08-25 14:28:15,767 | INFO     | router.keyframe_api | info:44 | Text search request: query='red car', top_k=10, threshold=0.0
+2025-08-25 14:54:11,483 | INFO     | router.keyframe_api | info:44 | Text search request: query='red car', top_k=10, threshold=0.0
+2025-08-25 15:32:56,258 | INFO     | router.keyframe_api | info:44 | Text search request: query='car', top_k=10, threshold=0.0
+2025-08-25 15:33:02,976 | INFO     | router.keyframe_api | info:44 | Text search request: query='car', top_k=10, threshold=0.0
+2025-08-25 15:33:03,105 | INFO     | router.keyframe_api | info:44 | Text search request: query='car', top_k=10, threshold=0.0
+2025-08-25 15:33:03,231 | INFO     | router.keyframe_api | info:44 | Found 10 results for query: 'car'
+2025-08-25 15:33:03,235 | INFO     | router.keyframe_api | info:44 | Found 10 results for query: 'car'
+2025-08-25 15:33:03,238 | INFO     | router.keyframe_api | info:44 | Found 10 results for query: 'car'
+2025-08-25 15:33:57,286 | INFO     | router.keyframe_api | info:44 | Text search request: query='car', top_k=49, threshold=0.0
+2025-08-25 15:33:57,479 | INFO     | router.keyframe_api | info:44 | Found 49 results for query: 'car'
+2025-08-25 15:38:33,191 | INFO     | router.keyframe_api | info:44 | Text search with group exclusion: query='police man', exclude_groups=[]
+2025-08-25 15:38:33,372 | INFO     | router.keyframe_api | info:44 | Found 49 results excluding groups []
+2025-08-25 15:48:49,158 | INFO     | router.keyframe_api | info:44 | Text search request: query='car', top_k=10, threshold=0.0
+2025-08-25 15:48:49,409 | INFO     | router.keyframe_api | info:44 | Found 10 results for query: 'car'
+2025-08-25 15:51:26,667 | INFO     | router.keyframe_api | info:44 | Text search request: query='car', top_k=10, threshold=0.0
+2025-08-25 15:51:26,783 | INFO     | router.keyframe_api | info:44 | Found 10 results for query: 'car'
+2025-08-25 16:06:22,385 | INFO     | router.keyframe_api | info:44 | Text search request: query='car', top_k=10, threshold=0.0
+2025-08-25 16:06:22,476 | INFO     | router.keyframe_api | info:44 | Text search request: query='car', top_k=10, threshold=0.0
+2025-08-25 16:06:22,502 | INFO     | router.keyframe_api | info:44 | Found 10 results for query: 'car'
+2025-08-25 16:06:22,506 | INFO     | router.keyframe_api | info:44 | Found 10 results for query: 'car'
+2025-08-25 16:07:01,080 | INFO     | router.keyframe_api | info:44 | Text search request: query='car', top_k=10, threshold=0.0
+2025-08-25 16:07:01,193 | INFO     | router.keyframe_api | info:44 | Found 10 results for query: 'car'
+2025-08-25 16:07:27,601 | INFO     | router.keyframe_api | info:44 | Text search request: query='police', top_k=10, threshold=0.0
+2025-08-25 16:07:27,723 | INFO     | router.keyframe_api | info:44 | Found 10 results for query: 'police'
+2025-08-25 16:07:43,959 | INFO     | router.keyframe_api | info:44 | Text search request: query='police', top_k=10, threshold=0.0
+2025-08-25 16:07:44,071 | INFO     | router.keyframe_api | info:44 | Found 10 results for query: 'police'
+2025-08-25 16:13:41,528 | INFO     | router.keyframe_api | info:44 | Text search request: query='car', top_k=10, threshold=0.0
+2025-08-25 16:13:41,641 | INFO     | router.keyframe_api | info:44 | Found 10 results for query: 'car'
+2025-08-25 16:14:40,325 | INFO     | router.keyframe_api | info:44 | Text search request: query='car', top_k=9, threshold=0.0
+2025-08-25 16:14:40,436 | INFO     | router.keyframe_api | info:44 | Found 9 results for query: 'car'
+2025-08-25 16:14:47,696 | INFO     | router.keyframe_api | info:44 | Text search request: query='tree', top_k=9, threshold=0.0
+2025-08-25 16:14:47,813 | INFO     | router.keyframe_api | info:44 | Found 9 results for query: 'tree'
+2025-08-25 16:16:03,137 | INFO     | router.keyframe_api | info:44 | Text search request: query='xe', top_k=9, threshold=0.0
+2025-08-25 16:16:03,253 | INFO     | router.keyframe_api | info:44 | Found 9 results for query: 'xe'
+2025-08-25 16:16:28,635 | INFO     | router.keyframe_api | info:44 | Text search request: query='person walking in the park', top_k=9, threshold=0.0
+2025-08-25 16:16:28,757 | INFO     | router.keyframe_api | info:44 | Found 9 results for query: 'person walking in the park'
+2025-08-25 16:18:07,279 | INFO     | router.keyframe_api | info:44 | Text search request: query='two people', top_k=9, threshold=0.0
+2025-08-25 16:18:07,407 | INFO     | router.keyframe_api | info:44 | Found 9 results for query: 'two people'
+2025-08-25 16:18:16,580 | INFO     | router.keyframe_api | info:44 | Text search request: query='two people', top_k=58, threshold=0.3
+2025-08-25 16:18:16,712 | INFO     | router.keyframe_api | info:44 | Found 0 results for query: 'two people'
+2025-08-25 16:18:19,144 | INFO     | router.keyframe_api | info:44 | Text search request: query='two people', top_k=58, threshold=0.1
+2025-08-25 16:18:19,333 | INFO     | router.keyframe_api | info:44 | Found 53 results for query: 'two people'
+2025-08-30 03:24:33,301 | INFO     | router.keyframe_api | info:44 | Text search request: query='A man is being interviewed at a festival. Behind him is a purple bird-shaped decoration.', top_k=39, threshold=0.0
+2025-08-30 03:24:37,630 | INFO     | router.keyframe_api | info:44 | Found 39 results for query: 'A man is being interviewed at a festival. Behind him is a purple bird-shaped decoration.'
+2025-08-30 03:25:26,034 | INFO     | router.keyframe_api | info:44 | Text search request: query='A flycam shot of a bridge in Ho Chi Minh City, followed by a shot of Bitexco Tower. A few shots later switch to Hoan Kiem Lake in Hanoi.', top_k=39, threshold=0.0
+2025-08-30 03:25:26,174 | INFO     | router.keyframe_api | info:44 | Found 39 results for query: 'A flycam shot of a bridge in Ho Chi Minh City, followed by a shot of Bitexco Tower. A few shots later switch to Hoan Kiem Lake in Hanoi.'
+2025-08-30 03:27:05,329 | INFO     | router.keyframe_api | info:44 | Text search request: query='This is a prize introduction for a contest designed with a blue background and white text overlaying the contest introduction video. There are a total of 18 main prizes for the contest. What is the total value of the main prizes?', top_k=39, threshold=0.0
+2025-08-30 03:27:05,471 | INFO     | router.keyframe_api | info:44 | Found 39 results for query: 'This is a prize introduction for a contest designed with a blue background and white text overlaying the contest introduction video. There are a total of 18 main prizes for the contest. What is the total value of the main prizes?'
+2025-08-30 03:33:23,006 | INFO     | router.keyframe_api | info:44 | Text search request: query='red car', top_k=39, threshold=0.0
+2025-08-30 03:33:23,165 | INFO     | router.keyframe_api | info:44 | Found 39 results for query: 'red car'
+2025-08-30 03:33:48,237 | INFO     | router.keyframe_api | info:44 | Text search request: query='Một người đàn ông đang trả lời phỏng vấn trong một lễ hội. Phía sau người đàn ông này là một vật trang trí có hình dáng con chim màu tím.', top_k=39, threshold=0.0
+2025-08-30 03:33:48,387 | INFO     | router.keyframe_api | info:44 | Found 39 results for query: 'Một người đàn ông đang trả lời phỏng vấn trong một lễ hội. Phía sau người đàn ông này là một vật trang trí có hình dáng con chim màu tím.'
+2025-08-30 03:34:35,803 | INFO     | router.keyframe_api | info:44 | Text search request: query='Cảnh quay bằng flycam một cây cầu ở TP Hồ Chí Minh, tiếp theo đến cảnh quay tòa nhà Bitexco. Một vài cảnh sau đó chuyển qua quay hình ảnh hồ gươm tại Hà Nội.', top_k=39, threshold=0.0
+2025-08-30 03:34:35,985 | INFO     | router.keyframe_api | info:44 | Found 39 results for query: 'Cảnh quay bằng flycam một cây cầu ở TP Hồ Chí Minh, tiếp theo đến cảnh quay tòa nhà Bitexco. Một vài cảnh sau đó chuyển qua quay hình ảnh hồ gươm tại Hà Nội.'
+2025-08-30 03:34:57,243 | INFO     | router.keyframe_api | info:44 | Text search request: query='Một người đàn ông đang trả lời phỏng vấn trong một lễ hội. Phía sau người đàn ông này là một vật trang trí có hình dáng con chim màu tím.', top_k=39, threshold=0.0
+2025-08-30 03:34:57,387 | INFO     | router.keyframe_api | info:44 | Found 39 results for query: 'Một người đàn ông đang trả lời phỏng vấn trong một lễ hội. Phía sau người đàn ông này là một vật trang trí có hình dáng con chim màu tím.'
+2025-08-30 03:35:07,399 | INFO     | router.keyframe_api | info:44 | Text search request: query='Một người đàn ông đang trả lời phỏng vấn trong một lễ hội. Phía sau người đàn ông này là một vật trang trí có hình dáng con chim màu tím.', top_k=100, threshold=0.0
+2025-08-30 03:35:07,557 | INFO     | router.keyframe_api | info:44 | Found 100 results for query: 'Một người đàn ông đang trả lời phỏng vấn trong một lễ hội. Phía sau người đàn ông này là một vật trang trí có hình dáng con chim màu tím.'
