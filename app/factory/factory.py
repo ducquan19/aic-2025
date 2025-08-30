@@ -1,5 +1,6 @@
 import os
 import sys
+import torch
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
 
@@ -75,9 +76,17 @@ class ServiceFactory:
         )
 
     def _init_model_service(self, model_name: str):
-        model, _, preprocess = open_clip.create_model_and_transforms(model_name)
+        pretrained = "openai"  # hoặc chọn đúng chuỗi của model bạn dùng
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        model, _, preprocess = open_clip.create_model_and_transforms(
+            model_name, pretrained=pretrained
+        )
+        model = model.to(device)
         tokenizer = open_clip.get_tokenizer(model_name)
-        return ModelService(model=model, preprocess=preprocess, tokenizer=tokenizer)
+        return ModelService(
+            model=model, preprocess=preprocess, tokenizer=tokenizer, device=device
+        )
 
     def get_mongo_keyframe_repo(self):
         return self._mongo_keyframe_repo
