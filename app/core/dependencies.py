@@ -30,7 +30,10 @@ load_dotenv()
 
 @lru_cache
 def get_llm() -> LLM:
-    return GoogleGenAI("gemini-2.5-flash-lite", api_key=os.getenv("GOOGLE_GENAI_API"))
+    return GoogleGenAI(
+        "gemini-2.5-flash-lite",
+        api_key=os.getenv("GOOGLE_GENAI_API") or os.getenv("GOOGLE_API_KEY"),
+    )
 
 
 @lru_cache()

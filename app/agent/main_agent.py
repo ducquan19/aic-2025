@@ -111,7 +111,7 @@ class KeyframeSearchAgent:
 
         print(f"{group_num}")
         print(f"{video_num}")
-        print(f"L{group_num:02d}/V{video_num:03d}")
+        print(f"L{group_num:02d}/L{group_num:02d}_V{video_num:03d}")
 
         answer = await self.answer_generator.generate_answer(
             original_query=user_query,

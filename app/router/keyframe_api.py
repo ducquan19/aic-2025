@@ -81,7 +81,9 @@ async def search_keyframes(
             map(controller.convert_model_to_path, results),
         )
     )
-    return KeyframeDisplay(results=display_results)
+    # NEW: export CSV top-100 theo yêu cầu
+    export_path = controller._export_topk_csv(results, k=request.top_k)
+    return KeyframeDisplay(results=display_results, export_csv=export_path)
 
 
 @router.post(

@@ -45,7 +45,9 @@ class AppSettings(BaseSettings):
 
     DATA_FOLDER: str = os.path.join(ROOT_DIR, "data/keyframes")
     ID2INDEX_PATH: str = os.path.join(ROOT_DIR, "data/id2index.json")
-    # MODEL_NAME: str = "hf-hub:laion/CLIP-convnext_xxlarge-laion2B-s34B-b82K-augreg-soup"  # hoặc model khác bạn dùng
-    MODEL_NAME: str = "ViT-B-32"
+    # MODEL_NAME: str = "hf-hub:laion/CLIP-convnext_xxlarge-laion2B-s34B-b82K-augreg-soup"
+    MODEL_NAME: str = "ViT-B-32-quickgelu"
     FRAME2OBJECT: str = os.path.join(ROOT_DIR, "data/detections.json")
     ASR_PATH: str = os.path.join(ROOT_DIR, "data/asr_proc.json")
+    MAP_KEYFRAME_DIR: str = os.path.join(ROOT_DIR, "data/map-keyframes")
+    RESULT_DIR: str = os.path.join(ROOT_DIR, "data/results")

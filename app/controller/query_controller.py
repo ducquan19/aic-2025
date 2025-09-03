@@ -4,6 +4,10 @@ import json
 import os
 import sys
 
+from utils.map_index import n_to_frame_idx
+import csv
+from datetime import datetime
+
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
 
 sys.path.insert(0, ROOT_DIR)
@@ -25,6 +29,43 @@ class QueryController:
         self.id2index = json.load(open(id2index_path, "r"))
         self.model_service = model_service
         self.keyframe_service = keyframe_service
+
+        # New
+        from core.settings import AppSettings
+        self.app_settings = AppSettings()
+        os.makedirs(self.app_settings.RESULT_DIR, exist_ok=True)
+
+    def _video_name(self, group_num: int, video_num: int) -> str:
+        return f"L{group_num:02d}_V{video_num:03d}"
+
+    def _export_topk_csv(self, items: list[KeyframeServiceReponse], k: int = 100) -> str:
+        """
+        Ghi file CSV dạng: <video_name>, <frame_idx>
+        video_name: 'Lxx_Vyyy'
+        frame_idx: lấy từ data/map-keyframes/Lxx_Vyyy.csv, map cột 'n' == keyframe_num.
+        """
+        out_path = os.path.join(
+            self.app_settings.RESULT_DIR,
+            f"query_top{min(k, len(items))}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        )
+        rows = []
+        for kf in items[:k]:
+            video_name = self._video_name(kf.group_num, kf.video_num)
+            frame_idx = n_to_frame_idx(
+                self.app_settings.MAP_KEYFRAME_DIR, kf.group_num, kf.video_num, kf.keyframe_num
+            )
+            if frame_idx is None:
+                # fallback (nếu thiếu mapping), có thể ghi -1
+                frame_idx = -1
+            rows.append((video_name, frame_idx))
+
+        with open(out_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["video_name", "frame_idx"])
+            writer.writerows(rows)
+        return out_path
+
+    # --------
 
     def convert_model_to_path(self, model: KeyframeServiceReponse) -> tuple[str, float]:
         return (

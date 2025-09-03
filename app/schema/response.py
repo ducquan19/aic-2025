@@ -16,3 +16,6 @@ class SingleKeyframeDisplay(BaseModel):
 
 class KeyframeDisplay(BaseModel):
     results: list[SingleKeyframeDisplay]
+
+    # New
+    export_csv: str | None = None
