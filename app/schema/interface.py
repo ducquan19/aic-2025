@@ -7,6 +7,7 @@ class KeyframeInterface(BaseModel):
     video_num: int = Field(..., description="Video ID")
     group_num: int = Field(..., description="Group ID")
     keyframe_num: int = Field(..., description="Keyframe number")
+    prefix: str = Field(default="L", description="Dataset prefix, L or K")
 
 
 class MilvusSearchRequest(BaseModel):

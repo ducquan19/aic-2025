@@ -1,16 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from typing import List, Optional
+from pathlib import Path
 
 from schema.request import (
     TextSearchRequest,
     TextSearchWithExcludeGroupsRequest,
     TextSearchWithSelectedGroupsAndVideosRequest,
+    TrakeSearchRequest,
 )
 from schema.response import (
     KeyframeServiceReponse,
     SingleKeyframeDisplay,
     KeyframeDisplay,
+    TrakeDisplay,
+    TrakeItem,
 )
 from controller.query_controller import QueryController
 from core.dependencies import get_query_controller
@@ -83,7 +87,8 @@ async def search_keyframes(
     )
     # NEW: export CSV top-100 theo yêu cầu
     export_path = controller._export_topk_csv(results, k=request.top_k)
-    return KeyframeDisplay(results=display_results, export_csv=export_path)
+    export_fname = Path(export_path).name
+    return KeyframeDisplay(results=display_results, export_csv=export_fname)
 
 
 @router.post(
@@ -150,7 +155,10 @@ async def search_keyframes_exclude_groups(
             map(controller.convert_model_to_path, results),
         )
     )
-    return KeyframeDisplay(results=display_results)
+
+    export_path = controller._export_topk_csv(results, k=request.top_k)
+    export_fname = Path(export_path).name
+    return KeyframeDisplay(results=display_results, export_csv=export_fname)
 
 
 @router.post(
@@ -221,4 +229,65 @@ async def search_keyframes_selected_groups_videos(
             map(controller.convert_model_to_path, results),
         )
     )
-    return KeyframeDisplay(results=display_results)
+
+    export_path = controller._export_topk_csv(results, k=request.top_k)
+    export_fname = Path(export_path).name
+    return KeyframeDisplay(results=display_results, export_csv=export_fname)
+
+
+@router.post(
+    "/trake_search",
+    response_model=TrakeDisplay,
+    summary="TRAKE: Retrieval + Alignment using Beam Search",
+    description="Nhận 1-5 sự kiện, trả về 1 keyframe cho mỗi sự kiện, tất cả thuộc cùng 1 video và theo thứ tự thời gian",
+)
+async def trake_search(
+    request: TrakeSearchRequest,
+    controller: QueryController = Depends(get_query_controller),
+):
+    seq = await controller.trake_search(
+        events=request.events,
+        top_k=request.top_k,
+        score_threshold=request.score_threshold,
+        max_kf_gap=request.max_kf_gap,
+    )
+    if not seq:
+        return TrakeDisplay(video_group=-1, video_num=-1, results=[])
+
+    vg = seq[0].group_num
+    vn = seq[0].video_num
+    items: list[TrakeItem] = []
+    for i, kf in enumerate(seq):
+        path, score = controller.convert_model_to_path(kf)
+        items.append(
+            TrakeItem(
+                path=path,
+                score=score,
+                group_num=kf.group_num,
+                video_num=kf.video_num,
+                keyframe_num=kf.keyframe_num,
+                stage_index=i,
+            )
+        )
+
+    export_path = controller._export_topk_csv(seq, k=len(seq))
+    export_fname = Path(export_path).name
+    return TrakeDisplay(
+        video_group=vg, video_num=vn, results=items, export_csv=export_fname
+    )
+
+
+@router.get("/download")
+def download_csv(
+    fname: str, controller: QueryController = Depends(get_query_controller)
+):
+    results_dir = Path(controller.app_settings.RESULT_DIR)
+    safe_name = Path(fname).name
+    full = results_dir / safe_name
+    if not full.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(
+        full,
+        media_type="text/csv",
+        filename=safe_name,
+    )

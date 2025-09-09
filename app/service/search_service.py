@@ -1,6 +1,8 @@
 import os
 import sys
 
+from typing import List, Tuple
+
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
 sys.path.insert(0, ROOT_DIR)
 
@@ -73,6 +75,7 @@ class KeyframeQueryService:
                         group_num=keyframe.group_num,
                         keyframe_num=keyframe.keyframe_num,
                         confidence_score=result.distance,
+                        prefix=keyframe.prefix if hasattr(keyframe, "prefix") else "L",
                     )
                 )
         return response
@@ -122,3 +125,70 @@ class KeyframeQueryService:
         return await self._search_keyframes(
             text_embedding, top_k, score_threshold, exclude_ids
         )
+
+    async def trake_beam_search(
+        self,
+        stage_embeddings: List[List[float]],
+        beam_width: int = 50,
+        score_threshold: float = 0.0,
+        max_kf_gap: int = 200,
+    ) -> List[KeyframeServiceReponse]:
+        """
+        Beam search qua chuỗi sự kiện:
+        - Giai đoạn 1: lấy top-k keyframe
+        - Các giai đoạn sau: chỉ giữ ứng viên cùng video với phần tử trước,
+          keyframe_num tăng dần và chênh lệch <= max_kf_gap.
+        Trả về chuỗi keyframe tốt nhất (1 phần tử cho mỗi sự kiện).
+        """
+        if not stage_embeddings:
+            return []
+
+        # stage 1
+        first = await self._search_keyframes(
+            text_embedding=stage_embeddings[0],
+            top_k=min(beam_width, 100),
+            score_threshold=score_threshold,
+            exclude_indices=None,
+        )
+        if not first:
+            return []
+
+        # beam = [(tổng_điểm, [seq])]
+        beams: List[Tuple[float, List[KeyframeServiceReponse]]] = [
+            (r.confidence_score, [r]) for r in first
+        ]
+
+        # các stage tiếp theo
+        for s in range(1, len(stage_embeddings)):
+            emb = stage_embeddings[s]
+            # mở rộng ứng viên rộng hơn trước khi lọc
+            candidates = await self._search_keyframes(
+                text_embedding=emb,
+                top_k=min(beam_width * 20, 200),
+                score_threshold=score_threshold,
+                exclude_indices=None,
+            )
+            next_beams: List[Tuple[float, List[KeyframeServiceReponse]]] = []
+
+            for total, seq in beams:
+                last = seq[-1]
+                for c in candidates:
+                    if (c.group_num != last.group_num) or (
+                        c.video_num != last.video_num
+                    ):
+                        continue
+                    if int(c.keyframe_num) <= int(last.keyframe_num):
+                        continue
+                    if int(c.keyframe_num) - int(last.keyframe_num) > max_kf_gap:
+                        continue
+                    next_beams.append((total + c.confidence_score, seq + [c]))
+
+            # giữ lại beam tốt nhất
+            next_beams.sort(key=lambda x: x[0], reverse=True)
+            beams = next_beams[:beam_width]
+            if not beams:
+                return []
+
+        # chọn best
+        _, best_seq = max(beams, key=lambda x: x[0])
+        return best_seq

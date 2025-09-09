@@ -8,6 +8,7 @@ class Keyframe(Document):
     video_num: Annotated[int, Indexed()]
     group_num: Annotated[int, Indexed()]
     keyframe_num: Annotated[int, Indexed()]
+    prefix: str = Field(default="L")
 
     class Settings:
         name = "keyframes"

@@ -24,6 +24,7 @@ class KeyframeRepository(MongoBaseRepository[Keyframe]):
                 video_num=keyframe.video_num,
                 group_num=keyframe.group_num,
                 keyframe_num=keyframe.keyframe_num,
+                prefix=getattr(keyframe, "prefix", "L"),
             )
             for keyframe in result
         ]

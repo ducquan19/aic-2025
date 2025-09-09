@@ -179,20 +179,33 @@ class AnswerGenerator:
         original_query: str,
         final_keyframes: List[KeyframeServiceReponse],
         objects_data: Dict[str, List[str]],
+        asr_data: Dict[str, dict | str],
     ):
         chat_messages = []
         for kf in final_keyframes:
-            keyy = f"L{kf.group_num:02d}/L{kf.group_num:02d}_V{kf.video_num:03d}/{kf.keyframe_num:03d}.jpg"
+            keyy = f"{kf.prefix}{kf.group_num:02d}/{kf.prefix}{kf.group_num:02d}_V{kf.video_num:03d}/{kf.keyframe_num:03d}.jpg"
             objects = objects_data.get(keyy, [])
 
             image_path = os.path.join(
                 self.data_folder,
-                f"L{kf.group_num:02d}/L{kf.group_num:02d}_V{kf.video_num:03d}/{kf.keyframe_num:03d}.jpg",
+                f"{kf.prefix}{kf.group_num:02d}/{kf.prefix}{kf.group_num:02d}_V{kf.video_num:03d}/{kf.keyframe_num:03d}.jpg",
             )
+
+            # Lấy ASR theo video
+            vkey = f"{kf.prefix}{kf.group_num:02d}_V{kf.video_num:03d}.mp4"
+            asr_rec = asr_data.get(vkey, {})
+            if isinstance(asr_rec, dict):
+                asr_text = (
+                    asr_rec.get("asr_clean") or asr_rec.get("asr_raw") or ""
+                ).strip()
+            else:
+                asr_text = str(asr_rec).strip() if asr_rec else ""
+            asr_snippet = (asr_text[:400] + "…") if len(asr_text) > 400 else asr_text
 
             context_text = f"""
             Keyframe {kf.key} from Video {kf.video_num} (Confidence: {kf.confidence_score:.3f}):
             - Detected Objects: {', '.join(objects) if objects else 'None detected'}
+            - ASR Snippet: {asr_snippet if asr_snippet else "N/A"}
             """
 
             if os.path.exists(image_path):
@@ -206,7 +219,6 @@ class AnswerGenerator:
                 ]
 
             user_message = ChatMessage(role=MessageRole.USER, content=message_content)
-
             chat_messages.append(user_message)
 
         final_prompt = self.answer_prompt.format(
