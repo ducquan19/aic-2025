@@ -1,11 +1,29 @@
 import os
+import sys
+from pathlib import Path
 import streamlit as st
 import requests
 import json
 from typing import List, Optional
 import pandas as pd
+import csv
+from io import StringIO
 
-# Page configuration
+# ====== Ensure we can import from project root (for AppSettings) ======
+ROOT_DIR = Path(__file__).resolve().parents[1]  # project root (contains "app/")
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+try:
+    from app.core.settings import AppSettings
+
+    APP_SETTINGS = AppSettings()
+    MAP_DIR_DEFAULT = APP_SETTINGS.MAP_KEYFRAME_DIR  # <-- dùng mặc định từ settings
+except Exception:
+    # fallback nếu không import được (chạy ngoài repo)
+    MAP_DIR_DEFAULT = "data/map-keyframes"
+
+# ============== Page configuration ==============
 st.set_page_config(
     page_title="Keyframe Search",
     page_icon="🔍",
@@ -13,13 +31,11 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Custom CSS for better styling
+# ============== Custom CSS ==============
 st.markdown(
     """
 <style>
-    .main > div {
-        padding-top: 2rem;
-    }
+    .main > div { padding-top: 2rem; }
 
     .search-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -28,14 +44,6 @@ st.markdown(
         margin-bottom: 2rem;
         color: white;
     }
-
-    .mode-selector {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 1rem;
-        border-radius: 10px;
-        margin: 1rem 0;
-    }
-
     .result-card {
         background: white;
         padding: 1rem;
@@ -44,7 +52,6 @@ st.markdown(
         margin-bottom: 1rem;
         border-left: 4px solid #667eea;
     }
-
     .score-badge {
         background: #28a745;
         color: white;
@@ -53,7 +60,6 @@ st.markdown(
         font-size: 0.8rem;
         font-weight: bold;
     }
-
     .stButton > button {
         background: linear-gradient(45deg, #667eea, #764ba2);
         color: white;
@@ -63,10 +69,32 @@ st.markdown(
         font-weight: 600;
         transition: all 0.3s ease;
     }
-
     .stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Small download button + toolbar (right aligned) */
+    .top-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: .5rem;
+        margin-top: -1rem;
+        margin-bottom: .5rem;
+    }
+    /* Shrink download button */
+    div[data-testid="stDownloadButton"] button {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.85rem;
+        border-radius: 8px;
+        background: #4c72ff;
+    }
+
+    .toolbar-input input {
+        height: 2rem !important;
+        padding: 0 .5rem !important;
+        font-size: 0.9rem !important;
     }
 
     .metric-container {
@@ -81,17 +109,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Initialize session state
-if "search_results" not in st.session_state:
-    st.session_state.search_results = []
-if "api_base_url" not in st.session_state:
-    st.session_state.api_base_url = "http://localhost:8000"
-if "last_csv" not in st.session_state:
-    st.session_state.last_csv = None
-if "last_results" not in st.session_state:
-    st.session_state.last_results = []
-
-# Header
+# ============== Header ==============
 st.markdown(
     """
 <div class="search-container">
@@ -104,7 +122,24 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# API Configuration
+# ============== Session State ==============
+if "search_results" not in st.session_state:
+    st.session_state.search_results = []
+if "api_base_url" not in st.session_state:
+    st.session_state.api_base_url = "http://localhost:8000"
+if "export_fname" not in st.session_state:
+    st.session_state.export_fname = None
+if "trake_events" not in st.session_state:
+    st.session_state.trake_events = ["", "", "", "", ""]
+if "trake_params" not in st.session_state:
+    st.session_state.trake_params = {
+        "beam_width": 50,
+        "top_k_per_stage": 50,
+        "score_threshold": 0.1,
+        "max_kf_gap": 200,
+    }
+
+# ============== API Configuration ==============
 with st.expander("⚙️ API Configuration", expanded=False):
     api_url = st.text_input(
         "API Base URL",
@@ -114,11 +149,11 @@ with st.expander("⚙️ API Configuration", expanded=False):
     if api_url != st.session_state.api_base_url:
         st.session_state.api_base_url = api_url
 
-# Main search interface
+
+# ============== Main search interface ==============
 col1, col2 = st.columns([2, 1])
 
 with col2:
-    # Search mode selector
     st.markdown("### 🎛️ Search Mode")
     search_mode = st.selectbox(
         "Mode",
@@ -129,61 +164,134 @@ with col2:
             "TRAKE (1-5 events)",
         ],
         help="Choose how to filter your search results",
+        key="mode_select",
     )
 
 with col1:
-    # === Default / Exclude / Include: hiện ô query + tham số chung ===
+    # ========== Default/Exclude/Include: show query inputs; hide TRAKE ==========
     if search_mode in ["Default", "Exclude Groups", "Include Groups & Videos"]:
-        # Search query
         query = st.text_input(
             "🔍 Search Query",
             placeholder="Enter your search query (e.g., 'person walking in the park')",
             help="Enter 1-1000 characters describing what you're looking for",
+            key="default_query",
         )
-
-        # Search parameters
         col_param1, col_param2 = st.columns(2)
         with col_param1:
-            top_k = st.slider("📊 Max Results", min_value=1, max_value=200, value=100)
+            top_k = st.slider(
+                "📊 Max Results",
+                min_value=1,
+                max_value=200,
+                value=100,
+                key="default_topk",
+            )
         with col_param2:
             score_threshold = st.slider(
-                "🎯 Min Score", min_value=0.0, max_value=1.0, value=0.0, step=0.1
+                "🎯 Min Score",
+                min_value=0.0,
+                max_value=1.0,
+                value=0.0,
+                step=0.1,
+                key="default_score_th",
             )
 
+    # ========== TRAKE: show 5 events (5 rows) + TRAKE params; hide default query ==========
     elif search_mode == "TRAKE (1-5 events)":
-        st.markdown("### 🧭 TRAKE – Enter 1 to 5 events (each on its row)")
-        trake_events = []
+        st.markdown("### 🧭 TRAKE – Enter 1 to 5 events")
+        # 5 rows, same width as default query box
         for i in range(5):
-            ev = st.text_input(
+            st.session_state.trake_events[i] = st.text_input(
                 f"Event {i+1}",
+                value=st.session_state.trake_events[i],
                 placeholder=f"Describe event #{i+1} (optional)",
-                key=f"trake_event_{i}",
+                key=f"trake_event_row_{i}",
             )
-            if ev.strip():
-                trake_events.append(ev.strip())
 
         col_tr1, col_tr2, col_tr3, col_tr4 = st.columns(4)
         with col_tr1:
-            tr_topk = st.slider("📊 Max Results per stage", 5, 200, 50, 5)
+            st.session_state.trake_params["top_k_per_stage"] = st.slider(
+                "📊 Max Results per stage",
+                5,
+                200,
+                st.session_state.trake_params["top_k_per_stage"],
+                5,
+                key="tr_topk_stage",
+            )
         with col_tr2:
-            beam_width = st.slider("🧮 Beam width", 5, 200, 50, 5)
+            st.session_state.trake_params["beam_width"] = st.slider(
+                "🧮 Beam width",
+                5,
+                200,
+                st.session_state.trake_params["beam_width"],
+                5,
+                key="tr_beam_w",
+            )
         with col_tr3:
-            tr_score_threshold = st.slider("🎯 Min Score (TRAKE)", 0.0, 1.0, 0.1, 0.05)
+            st.session_state.trake_params["score_threshold"] = st.slider(
+                "🎯 Min Score (TRAKE)",
+                0.0,
+                1.0,
+                st.session_state.trake_params["score_threshold"],
+                0.05,
+                key="tr_score_th",
+            )
         with col_tr4:
-            tr_gap = st.number_input(
-                "Giới hạn max_kf_gap", min_value=1, max_value=5000, value=200, step=1
+            st.session_state.trake_params["max_kf_gap"] = st.number_input(
+                "Giới hạn max_kf_gap",
+                min_value=1,
+                max_value=5000,
+                value=st.session_state.trake_params["max_kf_gap"],
+                step=1,
+                key="tr_max_gap",
             )
 
-# Mode-specific parameters
+
+def render_download_button(placeholder):
+    """Vẽ nút Download vào placeholder nếu đã có export_fname."""
+    placeholder.empty()  # clear trước
+    fname = st.session_state.get("export_fname")
+    if not fname:
+        return
+    try:
+        dl_url = f"{st.session_state.api_base_url}/api/v1/keyframe/download"
+        r = requests.get(dl_url, params={"fname": fname}, timeout=30)
+        if r.status_code == 200:
+            with placeholder:
+                st.download_button(
+                    "Download CSV",
+                    data=r.content,
+                    file_name=fname,
+                    mime="text/csv",
+                    use_container_width=True,
+                    key="download_csv_small",
+                )
+        else:
+            with placeholder:
+                st.caption("CSV not ready")
+    except Exception:
+        with placeholder:
+            st.caption("CSV not ready")
+
+
+# ==== Row: Search + Download (same row) ====
+btn_col1, btn_col2 = st.columns([8, 2])
+
+with btn_col1:
+    do_search = st.button("🔎 Search", use_container_width=True, key="btn_search_any")
+
+with btn_col2:
+    download_ph = st.empty()
+    render_download_button(download_ph)
+
+# ============== Mode-specific extra params ==============
 if search_mode == "Exclude Groups":
     st.markdown("### 🚫 Exclude Groups")
     exclude_groups_input = st.text_input(
         "Group IDs to exclude",
         placeholder="Enter group IDs separated by commas (e.g., 1, 3, 7)",
         help="Keyframes from these groups will be excluded from results",
+        key="exclude_grps",
     )
-
-    # Parse exclude groups
     exclude_groups = []
     if exclude_groups_input.strip():
         try:
@@ -195,26 +303,22 @@ if search_mode == "Exclude Groups":
 
 elif search_mode == "Include Groups & Videos":
     st.markdown("### ✅ Include Groups & Videos")
-
     col_inc1, col_inc2 = st.columns(2)
     with col_inc1:
         include_groups_input = st.text_input(
             "Group IDs to include",
             placeholder="e.g., 2, 4, 6",
             help="Only search within these groups",
+            key="include_grps",
         )
-
     with col_inc2:
         include_videos_input = st.text_input(
             "Video IDs to include",
             placeholder="e.g., 101, 102, 203",
             help="Only search within these videos",
+            key="include_vids",
         )
-
-    # Parse include groups and videos
-    include_groups = []
-    include_videos = []
-
+    include_groups, include_videos = [], []
     if include_groups_input.strip():
         try:
             include_groups = [
@@ -222,7 +326,6 @@ elif search_mode == "Include Groups & Videos":
             ]
         except ValueError:
             st.error("Please enter valid group IDs separated by commas")
-
     if include_videos_input.strip():
         try:
             include_videos = [
@@ -231,45 +334,9 @@ elif search_mode == "Include Groups & Videos":
         except ValueError:
             st.error("Please enter valid video IDs separated by commas")
 
-elif search_mode == "TRAKE (1-5 events)":
-    if st.button("🚀 Run TRAKE", use_container_width=True):
-        if len(trake_events) == 0:
-            st.error("Please enter at least 1 event.")
-        else:
-            with st.spinner("Running TRAKE..."):
-                try:
-                    endpoint = (
-                        f"{st.session_state.api_base_url}/api/v1/keyframe/trake_search"
-                    )
-                    payload = {
-                        "events": trake_events,
-                        "beam_width": int(beam_width),
-                        "top_k": tr_topk,
-                        "score_threshold": float(score_threshold),
-                        "max_kf_gap": int(tr_gap),
-                    }
-                    resp = requests.post(endpoint, json=payload, timeout=60)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        # chuyển về format hiển thị chung
-                        st.session_state.search_results = [
-                            {"path": item["path"], "score": item["score"]}
-                            for item in data.get("results", [])
-                        ]
-                        if data.get("results"):
-                            st.success(
-                                f"✅ Video L{data['video_group']:02d}_V{data['video_num']:03d} | {len(data['results'])} keyframes được căn chỉnh."
-                            )
-                        else:
-                            st.warning("Không tìm thấy chuỗi hợp lệ.")
-                    else:
-                        st.error(f"API Error: {resp.status_code} - {resp.text}")
-                except Exception as e:
-                    st.error(f"Lỗi: {e}")
-
-# Search button and logic
-if search_mode in ["Default", "Exclude Groups", "Include Groups & Videos"]:
-    if st.button("🚀 Search", use_container_width=True):
+# ============== Search buttons & logic ==============
+if do_search:
+    if search_mode in ["Default", "Exclude Groups", "Include Groups & Videos"]:
         if not query.strip():
             st.error("Please enter a search query")
         elif len(query) > 1000:
@@ -286,7 +353,6 @@ if search_mode in ["Default", "Exclude Groups", "Include Groups & Videos"]:
                             "top_k": top_k,
                             "score_threshold": score_threshold,
                         }
-
                     elif search_mode == "Exclude Groups":
                         endpoint = f"{st.session_state.api_base_url}/api/v1/keyframe/search/exclude-groups"
                         payload = {
@@ -295,7 +361,6 @@ if search_mode in ["Default", "Exclude Groups", "Include Groups & Videos"]:
                             "score_threshold": score_threshold,
                             "exclude_groups": exclude_groups,
                         }
-
                     else:  # Include Groups & Videos
                         endpoint = f"{st.session_state.api_base_url}/api/v1/keyframe/search/selected-groups-videos"
                         payload = {
@@ -316,6 +381,13 @@ if search_mode in ["Default", "Exclude Groups", "Include Groups & Videos"]:
                     if response.status_code == 200:
                         data = response.json()
                         st.session_state.search_results = data.get("results", [])
+                        st.session_state.export_fname = (
+                            os.path.basename(data.get("export_csv") or "")
+                            if data.get("export_csv")
+                            else None
+                        )
+
+                        render_download_button(download_ph)
                         st.success(
                             f"✅ Found {len(st.session_state.search_results)} results!"
                         )
@@ -329,41 +401,81 @@ if search_mode in ["Default", "Exclude Groups", "Include Groups & Videos"]:
                 except Exception as e:
                     st.error(f"❌ Unexpected Error: {str(e)}")
 
-# Display results
+    elif search_mode == "TRAKE (1-5 events)":
+        events = [e.strip() for e in st.session_state.trake_events if e.strip()]
+        if len(events) == 0:
+            st.error("Please enter at least 1 event.")
+        else:
+            with st.spinner("🔍 Searching..."):
+                try:
+                    endpoint = (
+                        f"{st.session_state.api_base_url}/api/v1/keyframe/trake_search"
+                    )
+                    payload = {
+                        "events": events,
+                        "beam_width": int(st.session_state.trake_params["beam_width"]),
+                        "top_k": int(st.session_state.trake_params["top_k_per_stage"]),
+                        "score_threshold": float(
+                            st.session_state.trake_params["score_threshold"]
+                        ),
+                        "max_kf_gap": int(st.session_state.trake_params["max_kf_gap"]),
+                    }
+                    resp = requests.post(endpoint, json=payload, timeout=60)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        st.session_state.search_results = [
+                            {"path": item["path"], "score": item["score"]}
+                            for item in data.get("results", [])
+                        ]
+
+                        st.session_state.export_fname = (
+                            os.path.basename(data.get("export_csv") or "")
+                            if data.get("export_csv")
+                            else None
+                        )
+                        render_download_button(download_ph)
+
+                        if data.get("results"):
+                            video_code = data.get("video_code", "")
+                            if not video_code:
+                                video_code = f"L{data.get('video_group', 0):02d}_V{data.get('video_num', 0):03d}"
+                            st.success(
+                                f"✅ Aligned {len(data['results'])} keyframes in video {video_code}."
+                            )
+                        else:
+                            st.warning("No valid sequence found.")
+                    else:
+                        st.error(f"API Error: {resp.status_code} - {resp.text}")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+
+# ============== Results ==============
 if st.session_state.search_results:
     st.markdown("---")
     st.markdown("## 📋 Search Results")
 
-    # Results summary
     col_metric1, col_metric2, col_metric3 = st.columns(3)
-
     with col_metric1:
         st.metric("Total Results", len(st.session_state.search_results))
-
     with col_metric2:
-        avg_score = sum(
-            result["score"] for result in st.session_state.search_results
-        ) / len(st.session_state.search_results)
+        avg_score = sum(r["score"] for r in st.session_state.search_results) / max(
+            1, len(st.session_state.search_results)
+        )
         st.metric("Average Score", f"{avg_score:.3f}")
-
     with col_metric3:
-        max_score = max(result["score"] for result in st.session_state.search_results)
+        max_score = max(r["score"] for r in st.session_state.search_results)
         st.metric("Best Score", f"{max_score:.3f}")
 
-    # Sort by score (highest first)
     sorted_results = sorted(
         st.session_state.search_results, key=lambda x: x["score"], reverse=True
     )
 
-    # Display results in a grid
     for i, result in enumerate(sorted_results):
         with st.container():
             col_img, col_info = st.columns([1, 3])
-
             with col_img:
-                # Try to display image if path is accessible
                 try:
-                    # st.image(result["path"], width=200, caption=f"Keyframe {i+1}")
                     st.image(
                         os.path.join("data/keyframes", result["path"]),
                         width=200,
@@ -388,7 +500,6 @@ if st.session_state.search_results:
                     """,
                         unsafe_allow_html=True,
                     )
-
             with col_info:
                 st.markdown(
                     f"""
@@ -405,114 +516,9 @@ if st.session_state.search_results:
                 """,
                     unsafe_allow_html=True,
                 )
-
         st.markdown("<br>", unsafe_allow_html=True)
 
-# === CSV Export (on-demand, user-initiated) ===
-st.markdown("---")
-st.markdown("### ⬇️ Export Results to CSV (on demand)")
-
-# Cho phép đổi tên file xuất
-default_csv_name = "results.csv"
-csv_name = st.text_input(
-    "CSV file name",
-    value=default_csv_name,
-    help="You can change the filename when downloading",
-)
-
-# Cấu hình đường dẫn map-keyframes (để map keyframe_num -> frame_idx)
-# Bạn có thể đưa input này lên phần API Configuration nếu muốn cấu hình chung
-map_keyframes_dir = st.text_input(
-    "Map-keyframes directory",
-    value="data/map-keyframes",
-    help="Path to map-keyframes CSV files, e.g., data/map-keyframes/L21_V001.csv",
-)
-
-
-def parse_code_and_knum_from_path(rel_path: str):
-    """
-    Convert 'L21/L21_V001/002.jpg' -> ('L21_V001', 2)
-    or 'K07/K07_V008/123.jpg' -> ('K07_V008', 123)
-    """
-    parts = rel_path.replace("\\", "/").split("/")
-    if len(parts) < 3:
-        return None, None
-    # parts[0] = L21 or K07, parts[1] = L21_V001, parts[2] = 002.jpg
-    video_code = parts[1]  # e.g., L21_V001 or K07_V008
-    try:
-        kf_str = os.path.splitext(parts[2])[0]  # '002'
-        keyframe_num = int(kf_str)
-        return video_code, keyframe_num
-    except Exception:
-        return video_code, None
-
-
-import csv
-
-
-@st.cache_data(show_spinner=False)
-def load_mapping_for_video(map_dir: str, video_code: str) -> dict[int, int]:
-    """Đọc file map-keyframes <map_dir>/<video_code>.csv, trả về {n -> frame_idx}"""
-    mapping = {}
-    map_path = os.path.join(map_dir, f"{video_code}.csv")
-    if not os.path.exists(map_path):
-        return mapping
-    try:
-        with open(map_path, newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            # cột: n, pts_time, fps, frame_idx
-            for row in reader:
-                n = int(row["n"])
-                mapping[n] = int(float(row["frame_idx"]))
-    except Exception:
-        pass
-    return mapping
-
-
-# Build CSV content in memory (vì results hiển thị theo 'path' dạng Lxx/Lxx_Vyyy/nnn.jpg)
-def build_csv_bytes_from_results(results: list, map_dir: str) -> bytes:
-    """
-    rows: <video_code>, <frame_idx>
-    video_code: "L21_V001" hoặc "K07_V008"
-    frame_idx: lookup từ map-keyframes/<video_code>.csv theo keyframe_num
-    """
-    rows = []
-    cache = {}  # cache mapping per video_code
-    for item in results:
-        rel_path = item.get("path", "")
-        video_code, keyframe_num = parse_code_and_knum_from_path(rel_path)
-        if not video_code or keyframe_num is None:
-            continue
-        if video_code not in cache:
-            cache[video_code] = load_mapping_for_video(map_dir, video_code)
-        mp = cache[video_code]
-        frame_idx = mp.get(keyframe_num, -1)  # fallback -1 nếu không tìm thấy
-        rows.append((video_code, frame_idx))
-
-    # Ghi CSV vào bytes
-    from io import StringIO
-
-    sio = StringIO()
-    writer = csv.writer(sio)
-    writer.writerow(["video_code", "frame_idx"])
-    writer.writerows(rows)
-    return sio.getvalue().encode("utf-8")
-
-
-# Nút tải CSV
-if st.session_state.search_results:
-    csv_bytes = build_csv_bytes_from_results(
-        st.session_state.search_results, map_keyframes_dir
-    )
-    st.download_button(
-        label="Download CSV",
-        data=csv_bytes,
-        file_name=csv_name if csv_name.strip() else default_csv_name,
-        mime="text/csv",
-        use_container_width=True,
-    )
-
-# Footer
+# ============== Footer ==============
 st.markdown("---")
 st.markdown(
     """
